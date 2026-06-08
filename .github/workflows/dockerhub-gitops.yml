@@ -49,11 +49,13 @@ jobs:
             ${{ vars.DOCKERHUB_USERNAME }}/employee-frontend:latest
 
       - name: Update Kubernetes deployment images
+        env:
+          DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
         run: |
-          sed -i "s|image: .*employee-backend:.*|image: ${{ vars.DOCKERHUB_USERNAME }}/employee-backend:${IMAGE_TAG}|g" k8s-kind/backend-deployment.yaml
-          sed -i "s|image: .*employee-frontend:.*|image: ${ vars.DOCKERHUB_USERNAME }}/employee-frontend:${IMAGE_TAG}|g" k8s-kind/frontend-deployment.yaml
-          sed -i "s|image: .*employee-backend:.*|image: ${{ vars.DOCKERHUB_USERNAME }}/employee-backend:${IMAGE_TAG}|g" k8s-eks/backend-deployment.yaml
-          sed -i "s|image: .*employee-frontend:.*|image: ${{ vars.DOCKERHUB_USERNAME }}/employee-frontend:${IMAGE_TAG}|g" k8s-eks/frontend-deployment.yaml
+          sed -i "s|image: .*employee-backend:.*|image: ${DOCKERHUB_USERNAME}/employee-backend:${IMAGE_TAG}|g" k8s-kind/backend-deployment.yaml
+          sed -i "s|image: .*employee-frontend:.*|image: ${DOCKERHUB_USERNAME}/employee-frontend:${IMAGE_TAG}|g" k8s-kind/frontend-deployment.yaml
+          sed -i "s|image: .*employee-backend:.*|image: ${DOCKERHUB_USERNAME}/employee-backend:${IMAGE_TAG}|g" k8s-eks/backend-deployment.yaml
+          sed -i "s|image: .*employee-frontend:.*|image: ${DOCKERHUB_USERNAME}/employee-frontend:${IMAGE_TAG}|g" k8s-eks/frontend-deployment.yaml
 
       - name: Commit updated manifests
         run: |
