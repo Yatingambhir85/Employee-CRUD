@@ -1,43 +1,38 @@
 # Employee Hub
 
-🚀 A simple three-tier Employee CRUD application built for local deployment and DevOps practice.
-
-## ✨ Features
-
-- 🔐 Login and sign up
-- 👑 Admin-only employee create, update, and delete
-- 👤 Employee self-service profile update
-- 🔑 Temporary password popup when admin creates an employee
-- 🌗 Dark/light theme
-- 🐳 Docker Compose setup
-- 🗄️ PostgreSQL database
-- ⚙️ Node.js + Express API
-- ⚛️ React + Vite frontend
-
-## 🧱 Architecture
+A simple three-tier Employee CRUD app for DevOps practice.
 
 ```text
-Frontend  ->  Backend API  ->  PostgreSQL
-React         Node/Express      Database
+React frontend -> Node/Express backend -> PostgreSQL database
 ```
 
-## ✅ Prerequisites
+## What Is Included
 
-- Docker
-- Docker Compose
-- Git
-- kubectl, Minikube, and Argo CD for Kubernetes deployment
-- Docker Hub account for CI/CD image pushes
+- User login and signup
+- Admin employee create, update, and delete
+- Employee profile update
+- Docker Compose local setup
+- Kubernetes manifests for Kind and EKS
+- Argo CD application manifests
 
-## 🚀 Run With Docker
+## Project Workflow
 
-Clone the project, then from the project root:
+1. Configure the app using `.env`.
+2. Run locally with Docker Compose.
+3. Configure GitHub Actions secrets and variables.
+4. Push to `main` so the workflow builds images and updates Kubernetes manifests.
+5. Deploy to Kind or EKS.
+6. Use Argo CD for GitOps deployment/sync.
+
+## Local Setup
+
+Copy the example environment file:
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` and set your own values:
+Edit `.env`:
 
 ```env
 POSTGRES_USER=your_db_user
@@ -45,8 +40,8 @@ POSTGRES_PASSWORD=your_db_password
 POSTGRES_DB=employee_db
 DATABASE_URL=postgres://your_db_user:your_db_password@postgres:5432/employee_db
 CLIENT_ORIGIN=http://localhost:8080
-ADMIN_EMAIL=your-admin-email@example.com
-ADMIN_PASSWORD=your-strong-admin-password
+ADMIN_EMAIL=admin@your-company.example
+ADMIN_PASSWORD=replace-with-a-strong-password
 ```
 
 Start the app:
@@ -61,294 +56,82 @@ Open:
 http://localhost:8080
 ```
 
-## 👥 User Roles
-
-**Admin**
-
-- Add, edit, and delete employees
-- Gets a temporary password when creating a new employee
-- Controls employee email, role, department, and status
-
-**Employee**
-
-- View/search employee directory
-- Update own name, location, and password
-- Cannot edit other employee records
-
-## 🔐 Admin Login
-
-The admin account is created from your local `.env` file:
-
-```env
-ADMIN_EMAIL=...
-ADMIN_PASSWORD=...
-```
-
-Do not commit `.env` to GitHub.
-
-## 🛠️ Useful Commands
-
-Stop containers:
+Useful commands:
 
 ```bash
 docker compose down
-```
-
-Reset database data:
-
-```bash
 docker compose down -v
-```
-
-Check API health:
-
-```bash
 curl http://localhost:5000/api/health
 ```
 
-## ☸️ Kubernetes + Argo CD
+## Environment Notes
 
-This project has separate Kubernetes folders:
+- Keep `.env` local. Do not commit real secrets.
+- `DATABASE_URL` connects the backend to PostgreSQL.
+- `CLIENT_ORIGIN` should match the frontend URL.
+- `ADMIN_EMAIL` and `ADMIN_PASSWORD` create the first admin user.
+- For Docker Compose, the database host is `postgres`.
+- For EKS/RDS, use your RDS endpoint and set `DATABASE_SSL=true` in the Kubernetes secret.
+
+## Kubernetes Files
 
 ```text
-k8s-kind/  -> Local Kind deployment with in-cluster PostgreSQL
-k8s-eks/   -> AWS EKS deployment with external RDS PostgreSQL
+k8s-kind/  -> Local Kind deployment with PostgreSQL in the cluster
+k8s-eks/   -> AWS EKS deployment, usually with external RDS PostgreSQL
+argocd/    -> Argo CD application manifests
 ```
 
-Argo CD apps:
+Secret templates:
 
 ```text
-argocd/employee-hub-app.yaml      -> local Kind, path: k8s-kind
-argocd/employee-hub-eks-app.yaml  -> AWS EKS, path: k8s-eks
+k8s-kind/secret.example
+k8s-eks/secret.example
 ```
 
-### 1. Build and push Docker Hub images
-
-Login to Docker Hub, then build and push both images:
+Copy the correct template to `secret.yaml`, edit values, then apply it manually:
 
 ```bash
-docker login
-
-docker build -t your-dockerhub-username/employee-backend:latest ./backend
-docker build -t your-dockerhub-username/employee-frontend:latest ./frontend
-
-docker push your-dockerhub-username/employee-backend:latest
-docker push your-dockerhub-username/employee-frontend:latest
-```
-
-Update the Kubernetes manifests with your Docker Hub username:
-
-```bash
-sed -i 's|DOCKERHUB_USERNAME|your-dockerhub-username|g' k8s-kind/backend-deployment.yaml
-sed -i 's|DOCKERHUB_USERNAME|your-dockerhub-username|g' k8s-kind/frontend-deployment.yaml
-sed -i 's|DOCKERHUB_USERNAME|your-dockerhub-username|g' k8s-eks/backend-deployment.yaml
-sed -i 's|DOCKERHUB_USERNAME|your-dockerhub-username|g' k8s-eks/frontend-deployment.yaml
-```
-
-### 2. Create the app secret
-
-Do not commit real secrets.
-
-The files `k8s-kind/secret.example` and `k8s-eks/secret.example` are safe templates for Kubernetes secrets. They are intentionally not named `.yaml`, so these commands will not apply placeholder values by mistake:
-
-```bash
-kubectl apply -f k8s-kind
-kubectl apply -f k8s-eks
-```
-
-For local Kind:
-
-```bash
-kubectl create namespace employee-hub
-
 cp k8s-kind/secret.example k8s-kind/secret.yaml
-```
-
-Edit `k8s-kind/secret.yaml` with your values, then apply it:
-
-```bash
 kubectl apply -f k8s-kind/secret.yaml
 ```
 
-For EKS, create a separate local secret file:
+For EKS:
 
 ```bash
 cp k8s-eks/secret.example k8s-eks/secret.yaml
-```
-
-Edit `k8s-eks/secret.yaml` with your RDS values, then apply it:
-
-```bash
 kubectl apply -f k8s-eks/secret.yaml
 ```
 
-Both `secret.yaml` files are ignored by Git.
+## Deployment References
 
-For local Kind, keep:
+Use these files for detailed setup steps:
 
-```yaml
-CLIENT_ORIGIN: http://localhost:8080
-```
+| File | Usage |
+| --- | --- |
+| [EKS_KUBECTL_GUIDE.md](./EKS_KUBECTL_GUIDE.md) | Connect your machine to AWS EKS and verify the cluster with `kubectl`. |
+| [ARGO_CD_INSTALL_GUIDE.md](./ARGO_CD_INSTALL_GUIDE.md) | Install Argo CD on EKS and connect it to this GitOps repo. |
+| [.github/workflows/dockerhub-gitops.yml](./.github/workflows/dockerhub-gitops.yml) | GitHub Actions workflow that builds Docker images, pushes them to Docker Hub, updates Kubernetes image tags, and commits the manifest changes. |
 
-For EKS/cloud, change it to your real frontend URL:
-
-```yaml
-CLIENT_ORIGIN: https://your-domain.com
-```
-
-For EKS/RDS, also update:
-
-```yaml
-DATABASE_HOST: your-rds-endpoint.rds.amazonaws.com
-DATABASE_URL: postgres://user:password@your-rds-endpoint.rds.amazonaws.com:5432/employee_db
-DATABASE_SSL: "true"
-```
-
-### 3. Deploy with kubectl
-
-```bash
-kubectl apply -f k8s-kind
-kubectl get pods -n employee-hub
-kubectl port-forward svc/frontend -n employee-hub 8080:80
-```
-
-Open:
+GitHub workflow URL:
 
 ```text
-http://localhost:8080
+https://github.com/<your-github-username>/<your-repo-name>/actions/workflows/dockerhub-gitops.yml
 ```
 
-### 4. Deploy with Argo CD
+## GitHub Actions Setup
 
-Install Argo CD in your cluster, then update the Argo CD app with your GitHub repo URL:
+Create these in your GitHub repository settings:
 
-```bash
-sed -i 's|https://github.com/YOUR_GITHUB_USERNAME/employee-crud.git|https://github.com/your-github-username/employee-crud.git|g' argocd/employee-hub-app.yaml
-sed -i 's|https://github.com/YOUR_GITHUB_USERNAME/employee-crud.git|https://github.com/your-github-username/employee-crud.git|g' argocd/employee-hub-eks-app.yaml
-```
+| Type | Name | Value |
+| --- | --- | --- |
+| Repository variable | `DOCKERHUB_USERNAME` | Your Docker Hub username |
+| Repository secret | `DOCKERHUB_TOKEN` | Your Docker Hub access token |
 
-Apply the local Kind Argo CD app:
+After these are configured, push to `main` or run the workflow manually from the Actions tab.
 
-```bash
-kubectl apply -f argocd/employee-hub-app.yaml
-```
-
-For EKS, apply the EKS Argo CD app instead:
-
-```bash
-kubectl apply -f argocd/employee-hub-eks-app.yaml
-```
-
-Argo CD will sync the Kubernetes manifests from GitHub.
-
-## 🔁 GitHub Actions CI/CD
-
-The workflow in `.github/workflows/dockerhub-gitops.yml` runs when code is pushed to `main`.
-
-It will:
-
-- Build backend and frontend Docker images
-- Push both images to Docker Hub
-- Update image tags in Kubernetes deployment files
-- Commit the updated deployment files back to GitHub
-- Let Argo CD sync the latest manifests into Kubernetes
-
-Create these GitHub repository secrets:
+Argo CD app manifests:
 
 ```text
-DOCKERHUB_USERNAME
-DOCKERHUB_TOKEN
+argocd/employee-hub-app.yaml      -> Kind path: k8s-kind
+argocd/employee-hub-eks-app.yaml  -> EKS path: k8s-eks
 ```
-
-Image tags use the Git commit SHA:
-
-```text
-your-dockerhub-username/employee-backend:<commit-sha>
-your-dockerhub-username/employee-frontend:<commit-sha>
-```
-
-Argo CD watches:
-
-```text
-k8s-kind/ for local Kind
-k8s-eks/ for AWS EKS
-```
-
-## 💻 Local Development
-
-Start only PostgreSQL:
-
-```bash
-docker compose up -d postgres
-```
-
-Backend:
-
-```bash
-cd backend
-cp .env.example .env
-npm install
-npm run dev
-```
-
-Frontend:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Open:
-
-```text
-http://localhost:5173
-```
-
-## 📡 API Endpoints
-
-```text
-GET    /api/health
-POST   /api/auth/signup
-POST   /api/auth/login
-GET    /api/auth/me
-POST   /api/auth/logout
-GET    /api/profile
-PUT    /api/profile
-GET    /api/employees
-POST   /api/employees
-PUT    /api/employees/:id
-DELETE /api/employees/:id
-```
-
-Protected endpoints require:
-
-```text
-Authorization: Bearer <token>
-```
-
-## 📁 Project Structure
-
-```text
-employee-crud/
-├── backend/
-├── frontend/
-├── database/
-├── k8s-kind/
-├── k8s-eks/
-├── argocd/
-├── docker-compose.yml
-├── .env.example
-└── README.md
-```
-
-## 🔒 GitHub Safety
-
-- ✅ Commit `.env.example`
-- ❌ Do not commit `.env`
-- ❌ Do not commit real passwords or secrets
-- ✅ Use environment variables for cloud deployment
-
----
-
-Developed by Yatin Gambhir
