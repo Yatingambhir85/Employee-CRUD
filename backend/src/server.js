@@ -147,6 +147,8 @@ app.get("/api/health", async (_req, res) => {
 });
 
 app.post("/api/auth/signup", async (req, res, next) => {
+  const client = await pool.connect();
+
   try {
     const name = String(req.body.name || "").trim();
     const email = String(req.body.email || "").trim().toLowerCase();
@@ -159,18 +161,35 @@ app.post("/api/auth/signup", async (req, res, next) => {
       });
     }
 
-    const result = await pool.query(
+    await client.query("BEGIN");
+
+    const result = await client.query(
       `INSERT INTO users (name, email, password_hash, role)
        VALUES ($1, $2, $3, $4)
        RETURNING id, name, email, role`,
       [name, email, hashPassword(password), "Employee"]
     );
+
+    await client.query(
+      `INSERT INTO employees (name, email, role, department, location, status)
+       VALUES ($1, $2, 'Employee', 'General', 'Remote', 'Active')
+       ON CONFLICT (email) DO UPDATE
+       SET name = EXCLUDED.name,
+           updated_at = CURRENT_TIMESTAMP`,
+      [name, email]
+    );
+
+    await client.query("COMMIT");
+
     const user = result.rows[0];
     const token = createSession(user);
 
     res.status(201).json({ user: publicUser(user), token });
   } catch (error) {
+    await client.query("ROLLBACK");
     next(error);
+  } finally {
+    client.release();
   }
 });
 
