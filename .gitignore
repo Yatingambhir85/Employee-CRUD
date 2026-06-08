@@ -3,3 +3,6 @@ dist/
 .env
 .DS_Store
 npm-debug.log*
+k8s-kind/secret.yaml
+k8s-eks/secret.yaml
+k8s-eks/secrets.yml

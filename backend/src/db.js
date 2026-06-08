@@ -2,12 +2,32 @@ import pg from "pg";
 
 const { Pool } = pg;
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL environment variable is required.");
+const useSsl = process.env.DATABASE_SSL === "true";
+const hasDatabaseParts =
+  process.env.DATABASE_HOST &&
+  process.env.POSTGRES_USER &&
+  process.env.POSTGRES_PASSWORD &&
+  process.env.POSTGRES_DB;
+
+if (!hasDatabaseParts && !process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL or database connection parts are required.");
 }
 
+const connectionOptions = hasDatabaseParts
+  ? {
+      host: process.env.DATABASE_HOST,
+      port: Number(process.env.DATABASE_PORT || 5432),
+      user: process.env.POSTGRES_USER,
+      password: process.env.POSTGRES_PASSWORD,
+      database: process.env.POSTGRES_DB
+    }
+  : {
+      connectionString: process.env.DATABASE_URL
+    };
+
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
+  ...connectionOptions,
+  ssl: useSsl ? { rejectUnauthorized: false } : false
 });
 
 export async function initializeDatabase() {
