@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: yatingambhir/employee-frontend:e89bc52
+          image: yatingambhir/employee-frontend:3e516bb
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80

@@ -30,7 +30,7 @@ spec:
                 name: employee-hub-secrets
       containers:
         - name: backend
-          image: yatingambhir/employee-backend:e89bc52
+          image: yatingambhir/employee-backend:3e516bb
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000
